@@ -1,9 +1,10 @@
+// src/routes/Register.jsx
+
 import React, { useState } from 'react'
 import { createUserWithEmailAndPassword } from 'firebase/auth'
-import { auth } from '../firebase'
+import { auth, db } from '../firebase'
 import { useNavigate, Link } from 'react-router-dom'
 import { doc, setDoc } from 'firebase/firestore'
-import { db } from '../firebase'
 
 export default function Register() {
   const [email, setEmail] = useState('')
@@ -13,15 +14,31 @@ export default function Register() {
 
   async function handleSubmit(e) {
     e.preventDefault()
+
+    // Validação simples
+    if (!name || !email || !pass) {
+      alert('Preencha todos os campos.')
+      return
+    }
+
+    if (pass.length < 6) {
+      alert('A senha deve ter pelo menos 6 caracteres.')
+      return
+    }
+
     try {
+      // Cria usuário no Firebase Auth
       const userCred = await createUserWithEmailAndPassword(auth, email, pass)
+
       // Salva dados do usuário no Firestore
       await setDoc(doc(db, 'users', userCred.user.uid), {
         name,
         email,
         role: 'client'
       })
-      navigate('/')
+
+      // Redireciona para a tela de login
+      navigate('/login')
     } catch (err) {
       alert('Erro: ' + err.message)
     }
@@ -72,7 +89,7 @@ export default function Register() {
         {/* Link para login */}
         <p className="text-center text-gray-400 mt-6">
           Já tem conta?{' '}
-          <Link to="/" className="text-[#D7AF70] hover:underline">
+          <Link to="/login" className="text-[#D7AF70] hover:underline">
             Entrar
           </Link>
         </p>

@@ -16,11 +16,7 @@ export default function App() {
           <div className="flex items-center gap-3">
             <span className="font-semibold text-lg text-brand.dark">Sua Manicure</span>
           </div>
-          <nav className="hidden sm:flex gap-4">
-            <Link to="/" className="text-sm text-gray-700">Início</Link>
-            <Link to="/my" className="text-sm text-gray-700">Meus agend.</Link>
-            <Link to="/login" className="text-sm text-gray-700">Entrar</Link>
-          </nav>
+          
         </div>
       </header>
 

@@ -16,6 +16,10 @@ import { db, auth } from "../firebase";
 import { useAuthState } from "react-firebase-hooks/auth";
 import { useNavigate } from "react-router-dom";
 import CalendarModal from "../components/CalendarModal";
+import moment from "moment";
+
+// Número do WhatsApp da barbearia (apenas números, com DDI e DDD)
+const WHATSAPP_NUMBER = "5548991308512"; // <-- Troque aqui pelo número real
 
 export default function MyBookings() {
   const [user] = useAuthState(auth);
@@ -30,7 +34,6 @@ export default function MyBookings() {
 
   const navigate = useNavigate();
 
-  // BUSCA AGENDAMENTOS DO USUÁRIO
   useEffect(() => {
     if (!user) return;
 
@@ -47,8 +50,9 @@ export default function MyBookings() {
           id: doc.id,
           ...d,
           date: d.date?.toDate
-            ? d.date.toDate().toLocaleDateString()
+            ? moment(d.date.toDate()).format("DD/MM/YYYY")
             : d.date,
+          rawDate: d.date?.toDate ? d.date.toDate() : new Date(d.date),
           time: d.time || "",
         };
       });
@@ -58,12 +62,30 @@ export default function MyBookings() {
     return () => unsubscribe();
   }, [user]);
 
-  // CONFIRMAR CANCELAMENTO
+  const sendWhatsAppNotification = (booking) => {
+    const { serviceName, date, time } = booking;
+    const msg = `Olá! Estou cancelando meu agendamento para *${serviceName}* marcado para *${date} às ${time}*. Sei que está dentro do prazo de 24h e quero avisar.`;
+    const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
+    window.open(url, "_blank");
+  };
+
   const confirmDelete = async () => {
     if (!bookingToCancel) return;
 
     try {
+      const fullDateTime = moment(
+        `${bookingToCancel.date} ${bookingToCancel.time}`,
+        "DD/MM/YYYY HH:mm"
+      );
+      const hoursDiff = fullDateTime.diff(moment(), "hours");
+
+      // Envia WhatsApp se for dentro das 24h
+      if (hoursDiff < 24) {
+        sendWhatsAppNotification(bookingToCancel);
+      }
+
       await deleteDoc(doc(db, "bookings", bookingToCancel.id));
+
       setBookings((prev) =>
         prev.filter((b) => b.id !== bookingToCancel.id)
       );
@@ -83,13 +105,11 @@ export default function MyBookings() {
     }
   };
 
-  // ABRIR CONFIRMAÇÃO DE CANCELAMENTO
   const handleCancelClick = (booking) => {
     setBookingToCancel(booking);
     setShowCancelConfirm(true);
   };
 
-  // DETALHES DO AGENDAMENTO
   const handleDetails = async (id) => {
     const ref = doc(db, "bookings", id);
     const snap = await getDoc(ref);
@@ -100,15 +120,14 @@ export default function MyBookings() {
         serviceName: d.serviceName,
         price: d.price,
         duration: d.duration,
-        date: d.date?.toDate ? d.date.toDate().toLocaleDateString() : d.date,
+        date: d.date?.toDate ? moment(d.date.toDate()).format("DD/MM/YYYY") : d.date,
         time: d.time || "",
       });
     }
   };
 
-  // ABRIR MODAL DE ALTERAR HORÁRIO
   const handleEditTime = (booking) => {
-    setSelectedBooking(null); // fecha modal de detalhes
+    setSelectedBooking(null);
     setBookingToEdit(booking);
     setShowCalendar(true);
   };
@@ -117,9 +136,7 @@ export default function MyBookings() {
     <div className="p-6 relative">
       {/* Mensagem de ação */}
       <div
-        className={`absolute top-10 left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${
-          showMessage ? "opacity-100" : "opacity-0"
-        }`}
+        className={`absolute top-10 left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${showMessage ? "opacity-100" : "opacity-0"}`}
       >
         {message}
       </div>
@@ -185,21 +202,11 @@ export default function MyBookings() {
             <h3 className="text-lg font-bold text-[#D7AF70] mb-3">
               Detalhes do Agendamento
             </h3>
-            <p className="mb-2">
-              <span className="font-semibold">Serviço:</span> {selectedBooking.serviceName}
-            </p>
-            <p className="mb-2">
-              <span className="font-semibold">Preço:</span> R${selectedBooking.price}
-            </p>
-            <p className="mb-2">
-              <span className="font-semibold">Duração:</span> {selectedBooking.duration || "Não informado"}
-            </p>
-            <p className="mb-2">
-              <span className="font-semibold">Data:</span> {selectedBooking.date}
-            </p>
-            <p className="mb-4">
-              <span className="font-semibold">Hora:</span> {selectedBooking.time}
-            </p>
+            <p className="mb-2"><strong>Serviço:</strong> {selectedBooking.serviceName}</p>
+            <p className="mb-2"><strong>Preço:</strong> R${selectedBooking.price}</p>
+            <p className="mb-2"><strong>Duração:</strong> {selectedBooking.duration || "Não informado"}</p>
+            <p className="mb-2"><strong>Data:</strong> {selectedBooking.date}</p>
+            <p className="mb-4"><strong>Hora:</strong> {selectedBooking.time}</p>
 
             <div className="flex flex-col gap-2">
               <button
@@ -209,16 +216,15 @@ export default function MyBookings() {
                 Alterar Horário
               </button>
               <button
-                  onClick={() => {
-                    setSelectedBooking(null); // fecha somente o modal de detalhes
-                    setBookingToEdit(null);   // garante que não esteja editando
-                    setShowCalendar(false);   // fecha calendário se estiver aberto
-                  }}
-                  className="bg-[#D7AF70] text-black px-3 py-1 rounded-lg hover:opacity-90 transition text-sm"
-                >
-                  Fechar
-                </button>
-
+                onClick={() => {
+                  setSelectedBooking(null);
+                  setBookingToEdit(null);
+                  setShowCalendar(false);
+                }}
+                className="bg-[#D7AF70] text-black px-3 py-1 rounded-lg hover:opacity-90 transition text-sm"
+              >
+                Fechar
+              </button>
             </div>
           </div>
         </div>
@@ -255,31 +261,43 @@ export default function MyBookings() {
       {/* Modal de alterar horário */}
       {bookingToEdit && (
         <CalendarModal
-          isOpen={showCalendar} // ✅ importante!
+          isOpen={showCalendar}
           booking={bookingToEdit}
           onClose={() => {
             setShowCalendar(false);
             setBookingToEdit(null);
           }}
           onSave={async (newDate, newTime) => {
-            const ref = doc(db, "bookings", bookingToEdit.id);
-            await updateDoc(ref, { date: new Date(newDate), time: newTime });
+  const ref = doc(db, "bookings", bookingToEdit.id);
 
-            setBookings((prev) =>
-              prev.map((b) =>
-                b.id === bookingToEdit.id
-                  ? { ...b, date: new Date(newDate).toLocaleDateString(), time: newTime }
-                  : b
-              )
-            );
+  // ✅ Aqui está a correção com moment:
+  const correctedDate = moment(`${newDate} ${newTime}`, "YYYY-MM-DD HH:mm").toDate();
 
-            setMessage("⏰ Horário alterado com sucesso!");
-            setShowMessage(true);
-            setTimeout(() => setShowMessage(false), 3000);
+  await updateDoc(ref, {
+    date: correctedDate,
+    time: newTime,
+  });
 
-            setShowCalendar(false);
-            setBookingToEdit(null);
-          }}
+  setBookings((prev) =>
+    prev.map((b) =>
+      b.id === bookingToEdit.id
+        ? {
+            ...b,
+            date: moment(correctedDate).format("DD/MM/YYYY"),
+            time: newTime,
+          }
+        : b
+    )
+  );
+
+  setMessage("⏰ Horário alterado com sucesso!");
+  setShowMessage(true);
+  setTimeout(() => setShowMessage(false), 3000);
+
+  setShowCalendar(false);
+  setBookingToEdit(null);
+}}
+
         />
       )}
     </div>

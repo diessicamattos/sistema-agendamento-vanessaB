@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
 import { auth, db } from '../firebase'
-import { doc, getDoc } from 'firebase/firestore'
+import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import CalendarModal from '../components/CalendarModal'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -12,6 +12,7 @@ export default function Home() {
   const [openCalendar, setOpenCalendar] = useState(false)
   const [user] = useAuthState(auth)
   const [userData, setUserData] = useState(null)
+  const [bookings, setBookings] = useState([])
   const navigate = useNavigate()
 
   // Buscar dados do usuário no Firestore
@@ -27,6 +28,39 @@ export default function Home() {
     }
     fetchUserData()
   }, [user])
+
+  // Listener em tempo real para agendamentos do usuário
+  useEffect(() => {
+    if (!user) return;
+
+    const q = query(
+      collection(db, "bookings"),
+      where("clientId", "==", user.uid)
+    )
+
+    const unsubscribe = onSnapshot(q, (snapshot) => {
+      const updatedBookings = snapshot.docs.map(doc => {
+        const data = doc.data()
+        return {
+          id: doc.id,
+          serviceId: data.serviceId,
+          date: data.date?.toDate ? data.date.toDate() : data.date,
+          time: data.time,
+        }
+      })
+      setBookings(updatedBookings)
+
+      // Atualiza horários do modal caso o usuário esteja agendando
+      if (selectedService) {
+        const serviceBooking = updatedBookings.find(b => b.serviceId === selectedService.id)
+        if (serviceBooking) {
+          console.log("Horário atualizado:", serviceBooking.date, serviceBooking.time)
+        }
+      }
+    })
+
+    return () => unsubscribe()
+  }, [user, selectedService])
 
   // Serviços
   const services = [
@@ -158,7 +192,8 @@ export default function Home() {
           isOpen={openCalendar}
           onClose={() => setOpenCalendar(false)}
           service={selectedService}
-          clientId={user?.uid}   
+          clientId={user?.uid}  
+          bookings={bookings} // ✅ envia os horários atuais para o modal
         />
       )}
     </div>

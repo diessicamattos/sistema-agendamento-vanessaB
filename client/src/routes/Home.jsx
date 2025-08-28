@@ -1,8 +1,9 @@
 // src/routes/Home.jsx
 
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useAuthState } from 'react-firebase-hooks/auth'
-import { auth } from '../firebase'
+import { auth, db } from '../firebase'
+import { doc, getDoc } from 'firebase/firestore'
 import CalendarModal from '../components/CalendarModal'
 import { Link, useNavigate } from 'react-router-dom'
 
@@ -10,7 +11,22 @@ export default function Home() {
   const [selectedService, setSelectedService] = useState(null)
   const [openCalendar, setOpenCalendar] = useState(false)
   const [user] = useAuthState(auth)
+  const [userData, setUserData] = useState(null)
   const navigate = useNavigate()
+
+  // Buscar dados do usuário no Firestore
+  useEffect(() => {
+    const fetchUserData = async () => {
+      if (user) {
+        const docRef = doc(db, "users", user.uid)
+        const docSnap = await getDoc(docRef)
+        if (docSnap.exists()) {
+          setUserData(docSnap.data())
+        }
+      }
+    }
+    fetchUserData()
+  }, [user])
 
   // Serviços
   const services = [
@@ -35,6 +51,11 @@ export default function Home() {
     setOpenCalendar(true)
   }
 
+  async function handleLogout() {
+    await auth.signOut()
+    navigate('/login')
+  }
+
   return (
     <div className="min-h-screen bg-[#585B56] text-[#D7AF70] p-4 md:p-6">
       {/* Banner */}
@@ -48,15 +69,37 @@ export default function Home() {
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Agende seu horário comigo</h1>
           <p className="mb-4 text-[#937D64]">Agende online o seu horário para atendimento</p>
           {user && (
-            <Link 
-              to="/my" 
-              className="inline-block px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#937D64] transition"
-            >
-              Meus agendamentos
-            </Link>
+            <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
+              <Link 
+                to="/my" 
+                className="px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
+              >
+                Meus agendamentos
+              </Link>
+              <button 
+                onClick={handleLogout} 
+                className="px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
+              >
+                Sair
+              </button>
+            </div>
           )}
         </div>
       </section>
+
+      {/* Mensagem de boas-vindas */}
+      {user && (
+        <section className="mt-8 bg-[#000001] p-6 rounded-2xl shadow-lg text-center">
+          <h2 className="text-2xl font-bold">
+            Bem-vindo(a),{" "}
+            <span className="text-[#D7AF70]">
+              {userData?.name || user.email}
+            </span>{" "}
+            👋
+          </h2>
+          <p className="text-[#937D64] mt-2">É um prazer ter você aqui 💅</p>
+        </section>
+      )}
 
       {!user ? (
         // Aviso para login
@@ -65,7 +108,7 @@ export default function Home() {
           <p className="mt-2 text-[#937D64]">Após se cadastrar e fazer login, você terá acesso aos serviços, horários disponíveis e recados da proprietária.</p>
           <Link 
             to="/register" 
-            className="inline-block mt-4 px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#937D64] transition"
+            className="inline-block mt-4 px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
           >
             Criar conta
           </Link>
@@ -98,7 +141,7 @@ export default function Home() {
                   </div>
                   <button 
                     onClick={() => handleAgendar(s)} 
-                    className="px-4 py-2 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#937D64] transition"
+                    className="px-4 py-2 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
                   >
                     Agendar
                   </button>

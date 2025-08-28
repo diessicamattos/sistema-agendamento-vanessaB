@@ -1,7 +1,6 @@
 // src/components/CalendarModal.jsx
-
 import React, { useEffect, useState } from "react";
-import { collection, doc, getDocs, setDoc, query, where } from "firebase/firestore";
+import { collection, doc, getDocs, setDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import moment from "moment";
 import "moment/locale/pt-br";
@@ -9,10 +8,14 @@ import { useAuthState } from "react-firebase-hooks/auth";
 
 moment.locale("pt-br");
 
-export default function CalendarModal({ isOpen, onClose, service }) {
+export default function CalendarModal({ isOpen, onClose, service, booking, onSave }) {
   const [user] = useAuthState(auth);
-  const [selectedDate, setSelectedDate] = useState(moment());
-  const [selectedHour, setSelectedHour] = useState(null);
+  const [selectedDate, setSelectedDate] = useState(
+    booking?.date ? moment(booking.date, "YYYY-MM-DD") : moment()
+  );
+  const [selectedHour, setSelectedHour] = useState(
+    booking?.time ? parseInt(booking.time.split(":")[0]) + parseInt(booking.time.split(":")[1])/60 : null
+  );
   const [bookings, setBookings] = useState([]);
   const [availableHours, setAvailableHours] = useState([]);
   const [confirmationMessage, setConfirmationMessage] = useState("");
@@ -20,7 +23,6 @@ export default function CalendarModal({ isOpen, onClose, service }) {
 
   const nextDays = Array.from({ length: 14 }, (_, i) => moment().add(i, "days"));
 
-  // Converte duração do serviço para horas decimais
   const parseDuration = (duration) => {
     if (!duration) return 1;
     let hours = 0, minutes = 0;
@@ -36,40 +38,39 @@ export default function CalendarModal({ isOpen, onClose, service }) {
   // Carrega todos os agendamentos futuros
   useEffect(() => {
     const loadBookings = async () => {
-      const q = query(collection(db, "bookings"), where("date", ">=", moment().format("YYYY-MM-DD")));
+      const q = collection(db, "bookings");
       const snap = await getDocs(q);
       setBookings(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     loadBookings();
   }, []);
 
-  // Atualiza horários disponíveis sempre que a data ou serviço muda
+  // Atualiza horários disponíveis
   useEffect(() => {
-    if (!service) return;
+    const currentService = booking || service;
+    if (!currentService) return;
 
-    const duration = parseDuration(service.duration);
+    const duration = parseDuration(currentService.duration);
     const dayBookings = bookings
-      .filter(b => b.date === selectedDate.format("YYYY-MM-DD"))
+      .filter(b => b.date === selectedDate.format("YYYY-MM-DD") && b.id !== booking?.id)
       .map(b => {
-        const start = parseFloat(b.time.split(":")[0]) + parseFloat(b.time.split(":")[1]) / 60;
+        const start = parseFloat(b.time.split(":")[0]) + parseFloat(b.time.split(":")[1])/60;
         const end = start + parseDuration(b.duration || "1 hora");
         return { start, end };
       });
 
-    // Gera horários das 8:00 às 20:00 em intervalos de 30min
-    const hours = Array.from({ length: 25 }, (_, i) => 8 + i * 0.5).filter(hour => {
+    const hours = Array.from({ length: 25 }, (_, i) => 8 + i*0.5).filter(hour => {
       const endTime = hour + duration;
-      // verifica se qualquer horário da duração se sobrepõe a agendamentos existentes
-      return !dayBookings.some(b => (hour < b.end && endTime > b.start));
+      return !dayBookings.some(b => hour < b.end && endTime > b.start);
     });
 
     setAvailableHours(hours);
-    setSelectedHour(null);
-  }, [selectedDate, service, bookings]);
+    if (!hours.includes(selectedHour)) setSelectedHour(null);
+  }, [selectedDate, bookings, service, booking]);
 
-  const handleConfirmBooking = async () => {
+  const handleConfirm = async () => {
     if (!user) {
-      setConfirmationMessage("Você precisa estar logado para agendar.");
+      setConfirmationMessage("Você precisa estar logado.");
       setShowMessage(true);
       setTimeout(() => setShowMessage(false), 3000);
       return;
@@ -81,27 +82,28 @@ export default function CalendarModal({ isOpen, onClose, service }) {
       return;
     }
 
-    const startStr = moment({
-      hour: Math.floor(selectedHour),
-      minute: selectedHour % 1 === 0.5 ? 30 : 0,
-    }).format("HH:mm");
+    const hourStr = moment({ hour: Math.floor(selectedHour), minute: selectedHour % 1 === 0.5 ? 30 : 0 }).format("HH:mm");
 
-    const docRef = doc(db, "bookings", `${selectedDate.format("YYYY-MM-DD")}-${startStr}-${user.uid}`);
-    await setDoc(docRef, {
-      serviceName: service.name,
-      price: service.price,
-      duration: service.duration,
-      date: selectedDate.format("YYYY-MM-DD"),
-      time: startStr,
-      clientId: user.uid,
-      createdAt: new Date().toISOString(),
-    });
+    if (booking && onSave) {
+      // Editando agendamento existente
+      onSave(selectedDate.format("YYYY-MM-DD"), hourStr);
+      setConfirmationMessage(`⏰ Horário alterado para ${selectedDate.format("DD/MM/YYYY")} às ${hourStr}`);
+    } else if (service) {
+      // Criando novo agendamento
+      const docRef = doc(db, "bookings", `${selectedDate.format("YYYY-MM-DD")}-${hourStr}-${user.uid}`);
+      await setDoc(docRef, {
+        serviceName: service.name,
+        price: service.price,
+        duration: service.duration,
+        date: selectedDate.format("YYYY-MM-DD"),
+        time: hourStr,
+        clientId: user.uid,
+        createdAt: new Date().toISOString(),
+      });
+      setConfirmationMessage(`✅ Agendamento confirmado para ${selectedDate.format("DD/MM/YYYY")} às ${hourStr}`);
+    }
 
-    setConfirmationMessage(
-      `✅ Agendamento confirmado para ${selectedDate.format("DD/MM/YYYY")} às ${startStr} (${service.duration})`
-    );
     setShowMessage(true);
-
     setTimeout(() => {
       setShowMessage(false);
       onClose();
@@ -110,11 +112,13 @@ export default function CalendarModal({ isOpen, onClose, service }) {
 
   if (!isOpen) return null;
 
+  const currentName = booking?.serviceName || service?.name;
+
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-start pt-10 z-50 overflow-auto">
       <div className="bg-[#585B56] text-[#D7AF70] rounded-2xl p-4 sm:p-6 w-full max-w-md shadow-lg relative">
         <div className="flex justify-between items-center mb-3">
-          <h2 className="text-lg sm:text-xl font-bold">Agendar: {service?.name}</h2>
+          <h2 className="text-lg sm:text-xl font-bold">{booking ? `Alterar horário: ${currentName}` : `Agendar: ${currentName}`}</h2>
           <button
             onClick={onClose}
             className="text-[#000001] bg-[#D7AF70] px-2 py-1 rounded text-sm hover:bg-[#937D64] transition"
@@ -123,9 +127,8 @@ export default function CalendarModal({ isOpen, onClose, service }) {
           </button>
         </div>
 
-        {/* Mensagem de confirmação */}
         <div
-          className={`absolute top-[-60px] left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${showMessage ? "opacity-100" : "opacity-0"}`}
+          className={`absolute top-10 left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${showMessage ? "opacity-100" : "opacity-0"}`}
         >
           {confirmationMessage}
         </div>
@@ -164,10 +167,10 @@ export default function CalendarModal({ isOpen, onClose, service }) {
         </div>
 
         <button
-          onClick={handleConfirmBooking}
+          onClick={handleConfirm}
           className="w-full py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold shadow hover:bg-[#937D64] transition"
         >
-          Confirmar agendamento
+          {booking ? "Salvar Alteração" : "Confirmar agendamento"}
         </button>
       </div>
     </div>

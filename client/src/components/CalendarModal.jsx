@@ -1,6 +1,6 @@
 // src/components/CalendarModal.jsx
 import React, { useEffect, useState } from "react";
-import { collection, getDocs, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, doc, getDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import moment from "moment";
 import "moment/locale/pt-br";
@@ -14,6 +14,7 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
   const [selectedHour, setSelectedHour] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [availableHours, setAvailableHours] = useState([]);
+  const [blockedTimes, setBlockedTimes] = useState([]); // horários bloqueados do dia
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [showMessage, setShowMessage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -38,13 +39,13 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     moment().startOf("day").add(i + 1, "days")
   );
 
-  // Converte duração "HH:MM" para horas decimais
   const parseDuration = (duration) => {
     if (!duration) return 1;
     const [h, m] = duration.split(":");
     return parseInt(h) + parseInt(m) / 60;
   };
 
+  // Carrega todos os agendamentos
   useEffect(() => {
     const loadBookings = async () => {
       const snap = await getDocs(collection(db, "bookings"));
@@ -53,15 +54,35 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     loadBookings();
   }, []);
 
+  // Carrega horários bloqueados do Firestore (documento global)
+  useEffect(() => {
+    const loadBlockedTimes = async () => {
+      const docRef = doc(db, "blockedTimes", "global");
+      const snap = await getDoc(docRef);
+      if (snap.exists()) {
+        const data = snap.data();
+        // garante que seja sempre array de objetos {start, end}
+        const dayBlocked = data[selectedDate.format("YYYY-MM-DD")] || [];
+        const safeBlocked = dayBlocked.filter(i => i && i.start && i.end);
+        setBlockedTimes(safeBlocked);
+      } else {
+        setBlockedTimes([]);
+      }
+    };
+    loadBlockedTimes();
+  }, [selectedDate]);
+
+  // Calcula horários disponíveis
   useEffect(() => {
     const currentService = booking || service;
     if (!currentService) return;
 
     const duration = parseDuration(currentService.duration);
 
+    // Horários já reservados
     const dayBookings = bookings
       .filter(b => {
-        const bDate = moment(b.date.toDate ? b.date.toDate() : b.date);
+        const bDate = moment(b.date?.toDate ? b.date.toDate() : b.date);
         return bDate.isSame(selectedDate, "day") && b.id !== booking?.id;
       })
       .map(b => {
@@ -71,23 +92,33 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
         return { start, end };
       });
 
+    // Horários em que o serviço não pode ser agendado
     const hours = Array.from({ length: 22 }, (_, i) => 9 + i * 0.5).filter(start => {
       const end = start + duration;
-
       const bookingStart = selectedDate
         .clone()
         .hour(Math.floor(start))
         .minute(start % 1 === 0.5 ? 30 : 0);
 
       const isPast = bookingStart.isBefore(moment());
-      const isAvailable = !dayBookings.some(b => start < b.end && end > b.start);
+      const isBooked = dayBookings.some(b => start < b.end && end > b.start);
 
-      return !isPast && isAvailable;
+      // Verifica se está dentro de algum intervalo bloqueado
+      const isBlocked = blockedTimes.some(interval => {
+        if (!interval || !interval.start || !interval.end) return false;
+        const [blockStartH, blockStartM] = interval.start.split(":").map(Number);
+        const [blockEndH, blockEndM] = interval.end.split(":").map(Number);
+        const blockStart = blockStartH + blockStartM / 60;
+        const blockEnd = blockEndH + blockEndM / 60;
+        return start < blockEnd && end > blockStart;
+      });
+
+      return !isPast && !isBooked && !isBlocked;
     });
 
     setAvailableHours(hours);
     if (!hours.includes(selectedHour)) setSelectedHour(null);
-  }, [selectedDate, bookings, service, booking, selectedHour]);
+  }, [selectedDate, bookings, service, booking, selectedHour, blockedTimes]);
 
   const handleConfirm = async () => {
     if (!user) return showTempMessage("Você precisa estar logado.");

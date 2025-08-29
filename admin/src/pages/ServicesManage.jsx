@@ -10,12 +10,14 @@ export default function ServicesManage() {
   const [price, setPrice] = useState("");
   const [hour, setHour] = useState("");
   const [minute, setMinute] = useState("");
+  const [session, setSession] = useState("Manicure Tradicional"); // Nova propriedade
 
   const [editingId, setEditingId] = useState(null);
   const [editName, setEditName] = useState("");
   const [editPrice, setEditPrice] = useState("");
   const [editHour, setEditHour] = useState("");
   const [editMinute, setEditMinute] = useState("");
+  const [editSession, setEditSession] = useState("Manicure Tradicional"); // Para edição
 
   const [menuOpen, setMenuOpen] = useState(false);
   const nav = useNavigate();
@@ -34,14 +36,16 @@ export default function ServicesManage() {
   };
 
   const addService = async () => {
-    if (!name || !price || hour === "" || minute === "") return alert("Preencha todos os campos");
+    if (!name || !price || hour === "" || minute === "" || !session)
+      return alert("Preencha todos os campos");
     const duration = `${hour.padStart(2,"0")}:${minute.padStart(2,"0")}`;
     await addDoc(collection(db, "services"), {
       name,
       price: Number(price),
       duration,
+      category: session // salva a sessão
     });
-    setName(""); setPrice(""); setHour(""); setMinute("");
+    setName(""); setPrice(""); setHour(""); setMinute(""); setSession("Manicure Tradicional");
   };
 
   const removeService = async (id) => {
@@ -57,19 +61,24 @@ export default function ServicesManage() {
     const [h, m] = s.duration.split(":");
     setEditHour(h);
     setEditMinute(m);
+    setEditSession(s.category || "Manicure Tradicional");
   };
 
   const saveEdit = async (id) => {
-    if (!editName || !editPrice || editHour === "" || editMinute === "") return alert("Preencha todos os campos");
+    if (!editName || !editPrice || editHour === "" || editMinute === "" || !editSession)
+      return alert("Preencha todos os campos");
     const duration = `${editHour.padStart(2,"0")}:${editMinute.padStart(2,"0")}`;
     await updateDoc(doc(db, "services", id), {
       name: editName,
       price: Number(editPrice),
       duration,
+      category: editSession
     });
     setEditingId(null);
-    setEditName(""); setEditPrice(""); setEditHour(""); setEditMinute("");
+    setEditName(""); setEditPrice(""); setEditHour(""); setEditMinute(""); setEditSession("Manicure Tradicional");
   };
+
+  const sessions = ["Manicure Tradicional", "Alongamento", "Gel", "Outros Serviços"];
 
   return (
     <div className="min-h-screen bg-gray-100">
@@ -114,6 +123,9 @@ export default function ServicesManage() {
             <input type="number" placeholder="Preço" value={price} onChange={(e) => setPrice(e.target.value)} className="border p-2 rounded w-24" />
             <input type="number" placeholder="Hora" value={hour} onChange={(e) => setHour(e.target.value)} className="border p-2 rounded w-16" />
             <input type="number" placeholder="Minuto" value={minute} onChange={(e) => setMinute(e.target.value)} className="border p-2 rounded w-16" />
+            <select value={session} onChange={(e) => setSession(e.target.value)} className="border p-2 rounded">
+              {sessions.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
             <button onClick={addService} className="bg-blue-600 text-white px-4 py-2 rounded">Adicionar</button>
           </div>
 
@@ -127,13 +139,16 @@ export default function ServicesManage() {
                     <input type="number" value={editPrice} onChange={(e) => setEditPrice(e.target.value)} className="border p-1 rounded w-20" />
                     <input type="number" placeholder="Hora" value={editHour} onChange={(e) => setEditHour(e.target.value)} className="border p-1 rounded w-16" />
                     <input type="number" placeholder="Minuto" value={editMinute} onChange={(e) => setEditMinute(e.target.value)} className="border p-1 rounded w-16" />
+                    <select value={editSession} onChange={(e) => setEditSession(e.target.value)} className="border p-1 rounded">
+                      {sessions.map(s => <option key={s} value={s}>{s}</option>)}
+                    </select>
                     <button onClick={() => saveEdit(s.id)} className="bg-green-600 text-white px-2 py-1 rounded">Salvar</button>
                     <button onClick={() => setEditingId(null)} className="bg-gray-500 text-white px-2 py-1 rounded">Cancelar</button>
                   </div>
                 ) : (
                   <>
                     <div>
-                      <p className="font-medium">{s.name}</p>
+                      <p className="font-medium">{s.name} <span className="text-sm text-gray-500">({s.category})</span></p>
                       <p className="text-sm text-gray-600">R$ {s.price} • {s.duration}</p>
                     </div>
                     <div className="flex gap-2">

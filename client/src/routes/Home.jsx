@@ -5,7 +5,7 @@ import { auth, db } from '../firebase'
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import CalendarModal from '../components/CalendarModal'
 import { Link, useNavigate } from 'react-router-dom'
-import { FaClock } from 'react-icons/fa'
+import { FaClock, FaChevronDown, FaChevronUp } from 'react-icons/fa'
 
 export default function Home() {
   const [selectedService, setSelectedService] = useState(null)
@@ -15,8 +15,10 @@ export default function Home() {
   const [bookings, setBookings] = useState([])
   const [notes, setNotes] = useState("")
   const [services, setServices] = useState([])
+  const [openSessions, setOpenSessions] = useState({})
   const navigate = useNavigate()
 
+  // Buscar dados do usuário
   useEffect(() => {
     if (!user) return
     const fetchUserData = async () => {
@@ -27,6 +29,7 @@ export default function Home() {
     fetchUserData()
   }, [user])
 
+  // Listener agendamentos do usuário
   useEffect(() => {
     if (!user) return
     const q = query(collection(db, "bookings"), where("clientId", "==", user.uid))
@@ -45,6 +48,7 @@ export default function Home() {
     return () => unsubscribe()
   }, [user])
 
+  // Listener recado global
   useEffect(() => {
     const docRef = doc(db, "notes", "global")
     const unsub = onSnapshot(docRef, snap => {
@@ -54,6 +58,7 @@ export default function Home() {
     return () => unsub()
   }, [])
 
+  // Listener serviços
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "services"), snap => {
       const srv = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -68,19 +73,26 @@ export default function Home() {
     setOpenCalendar(true)
   }
 
+  // Agrupar serviços por sessão/categoria
   const groupedServices = services.reduce((acc, service) => {
-    const category = service.category || "Serviços"
+    const category = service.category || "Outros Serviços"
     if (!acc[category]) acc[category] = []
     acc[category].push(service)
     return acc
   }, {})
 
+  // Ordenar categorias e serviços por nome
   const sortedGroupedServices = Object.keys(groupedServices)
     .sort()
     .reduce((acc, key) => {
       acc[key] = groupedServices[key].sort((a, b) => a.name.localeCompare(b.name))
       return acc
     }, {})
+
+  // Alternar sessão aberta/fechada
+  const toggleSession = (session) => {
+    setOpenSessions(prev => ({ ...prev, [session]: !prev[session] }))
+  }
 
   return (
     <div className="p-4 md:p-6">
@@ -128,31 +140,42 @@ export default function Home() {
         </section>
       )}
 
-      {/* Serviços por sessão */}
+      {/* Serviços por sessão (Accordion) */}
       {user && Object.keys(sortedGroupedServices).length > 0 && (
         <section className="mt-8 md:mt-10">
           {Object.entries(sortedGroupedServices).map(([session, servicesList]) => (
-            <div key={session} className="mb-8">
-              <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">{session}</h2>
-              <div className="flex flex-col gap-4">
-                {servicesList.map(s => (
-                  <div key={s.id} className="flex flex-col sm:flex-row items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
-                    <div className="flex items-center gap-4 w-full sm:w-auto">
-                      <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
-                      <span className="font-bold text-lg md:text-xl">{s.name}</span>
+            <div key={session} className="mb-6">
+              {/* Cabeçalho da sessão */}
+              <button 
+                onClick={() => toggleSession(session)}
+                className="w-full flex justify-between items-center bg-[#111111] text-[#D7AF70] font-bold text-lg md:text-xl px-4 py-3 rounded-xl shadow hover:bg-[#222] transition"
+              >
+                <span>{session} ({servicesList.length} serviços)</span>
+                {openSessions[session] ? <FaChevronUp /> : <FaChevronDown />}
+              </button>
+
+              {/* Serviços dentro da sessão */}
+              {openSessions[session] && (
+                <div className="mt-2 flex flex-col gap-4">
+                  {servicesList.map(s => (
+                    <div key={s.id} className="flex items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
+                      <div className="flex items-center gap-4">
+                        <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
+                        <span className="font-bold text-lg md:text-xl">{s.name}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <span className="text-[#D7AF70] flex items-center gap-1">
+                          <FaClock className="text-xs" /> {s.duration}
+                        </span>
+                        <span className="font-bold text-[#D7AF70]">R$ {s.price?.toFixed(2)}</span>
+                        <button onClick={() => handleAgendar(s)} className="px-3 py-1 rounded-lg bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition">
+                          Agendar
+                        </button>
+                      </div>
                     </div>
-                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
-                      <span className="text-[#D7AF70] flex items-center gap-1">
-                        <FaClock className="text-xs" /> {s.duration}
-                      </span>
-                      <span className="font-bold text-[#D7AF70]">R$ {s.price?.toFixed(2)}</span>
-                      <button onClick={() => handleAgendar(s)} className="px-3 py-1 rounded-lg bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition">
-                        Agendar
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
+                  ))}
+                </div>
+              )}
             </div>
           ))}
         </section>

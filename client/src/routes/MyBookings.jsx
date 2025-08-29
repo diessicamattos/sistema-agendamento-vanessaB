@@ -146,12 +146,6 @@ export default function MyBookings() {
         <h2 className="text-2xl font-semibold text-[#D7AF70]">
           Meus Agendamentos
         </h2>
-        <button
-          onClick={() => navigate("/")}
-          className="bg-[#D7AF70] text-black px-3 py-1 rounded-lg hover:opacity-90 transition text-sm"
-        >
-          Voltar para Home
-        </button>
       </div>
 
       <p className="text-sm text-gray-400 mb-4">

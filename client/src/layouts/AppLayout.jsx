@@ -12,27 +12,35 @@ export default function AppLayout() {
     navigate('/login')
   }
 
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
-
   return (
     <div className="min-h-screen bg-[#585B56] text-[#D7AF70] pb-28">
       <Outlet /> {/* Aqui serão renderizadas as páginas como Home e MyBookings */}
 
       {/* Menu fixo */}
       <nav className="fixed bottom-0 left-0 w-full bg-[#000001] border-t border-[#D7AF70] flex justify-around items-center py-3 shadow-lg z-50">
+        
+        {/* Botão Home */}
         <button 
-          onClick={scrollToTop}
+          onClick={() => {
+            if (window.location.pathname === '/') {
+              window.scrollTo({ top: 0, behavior: 'smooth' })
+            } else {
+              navigate('/')
+            }
+          }}
           className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition"
         >
           <FaHome className="text-2xl" />
           <span className="text-xs">Home</span>
         </button>
 
+        {/* Botão Meus Agendamentos */}
         <Link to="/my" className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition">
           <FaCalendarCheck className="text-2xl" />
           <span className="text-xs">Meus</span>
         </Link>
 
+        {/* Instagram */}
         <a 
           href="https://www.instagram.com/nailsbybrunalopes?igsh=NXJncnhvYTRzeXhw"
           target="_blank"
@@ -43,6 +51,7 @@ export default function AppLayout() {
           <span className="text-xs">Instagram</span>
         </a>
 
+        {/* Logout */}
         <button 
           onClick={handleLogout}
           className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition"

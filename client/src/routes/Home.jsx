@@ -145,16 +145,20 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">{session}</h2>
               <div className="flex flex-col gap-4">
                 {servicesList.map(s => (
-                  <div key={s.id} className="flex flex-col sm:flex-row items-center bg-[#000001] p-4 rounded-2xl shadow-lg gap-4">
-                    <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
-                    <div className="flex-1 text-center sm:text-left">
-                      <h3 className="font-bold text-lg md:text-xl">{s.name}</h3>
-                      <p className="text-[#D7AF70]">R$ {s.price?.toFixed(2)}</p>
-                      <p className="text-[#D7AF70] flex items-center justify-center sm:justify-start gap-1"><FaClock /> {s.duration}</p>
+                  <div key={s.id} className="flex items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
+                    <div className="flex items-center gap-4">
+                      <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
+                      <span className="font-bold text-lg md:text-xl">{s.name}</span>
                     </div>
-                    <button onClick={() => handleAgendar(s)} className="w-full sm:w-auto text-center px-4 py-2 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition">
-                      Agendar
-                    </button>
+                    <div className="flex items-center gap-4">
+                      <span className="text-[#D7AF70] flex items-center gap-1">
+                        <FaClock className="text-xs" /> {s.duration}
+                      </span>
+                      <span className="font-bold text-[#D7AF70]">R$ {s.price?.toFixed(2)}</span>
+                      <button onClick={() => handleAgendar(s)} className="px-3 py-1 rounded-lg bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition">
+                        Agendar
+                      </button>
+                    </div>
                   </div>
                 ))}
               </div>

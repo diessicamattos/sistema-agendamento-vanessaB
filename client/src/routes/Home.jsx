@@ -17,7 +17,6 @@ export default function Home() {
   const [services, setServices] = useState([])
   const navigate = useNavigate()
 
-  // Buscar dados do usuário
   useEffect(() => {
     if (!user) return
     const fetchUserData = async () => {
@@ -28,7 +27,6 @@ export default function Home() {
     fetchUserData()
   }, [user])
 
-  // Listener agendamentos do usuário
   useEffect(() => {
     if (!user) return
     const q = query(collection(db, "bookings"), where("clientId", "==", user.uid))
@@ -47,7 +45,6 @@ export default function Home() {
     return () => unsubscribe()
   }, [user])
 
-  // Listener recado global
   useEffect(() => {
     const docRef = doc(db, "notes", "global")
     const unsub = onSnapshot(docRef, snap => {
@@ -57,7 +54,6 @@ export default function Home() {
     return () => unsub()
   }, [])
 
-  // Listener serviços
   useEffect(() => {
     const unsub = onSnapshot(collection(db, "services"), snap => {
       const srv = snap.docs.map(d => ({ id: d.id, ...d.data() }))
@@ -72,24 +68,19 @@ export default function Home() {
     setOpenCalendar(true)
   }
 
-  // Agrupar serviços por sessão/categoria
   const groupedServices = services.reduce((acc, service) => {
-    const category = service.category || "Outros Serviços"
+    const category = service.category || "Serviços"
     if (!acc[category]) acc[category] = []
     acc[category].push(service)
     return acc
   }, {})
 
-  // Ordenar categorias e serviços por nome
   const sortedGroupedServices = Object.keys(groupedServices)
     .sort()
     .reduce((acc, key) => {
       acc[key] = groupedServices[key].sort((a, b) => a.name.localeCompare(b.name))
       return acc
     }, {})
-
-  // Função para rolar para o topo
-  const scrollToTop = () => window.scrollTo({ top: 0, behavior: 'smooth' })
 
   return (
     <div className="p-4 md:p-6">
@@ -145,12 +136,12 @@ export default function Home() {
               <h2 className="text-2xl md:text-3xl font-bold mb-4 md:mb-6">{session}</h2>
               <div className="flex flex-col gap-4">
                 {servicesList.map(s => (
-                  <div key={s.id} className="flex items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
-                    <div className="flex items-center gap-4">
-                      <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
+                  <div key={s.id} className="flex flex-col sm:flex-row items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
+                    <div className="flex items-center gap-4 w-full sm:w-auto">
+                      <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
                       <span className="font-bold text-lg md:text-xl">{s.name}</span>
                     </div>
-                    <div className="flex items-center gap-4">
+                    <div className="flex flex-col sm:flex-row items-center gap-2 sm:gap-4 mt-2 sm:mt-0">
                       <span className="text-[#D7AF70] flex items-center gap-1">
                         <FaClock className="text-xs" /> {s.duration}
                       </span>

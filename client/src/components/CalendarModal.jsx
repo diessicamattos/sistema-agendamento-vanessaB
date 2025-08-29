@@ -1,7 +1,6 @@
 // src/components/CalendarModal.jsx
-
 import React, { useEffect, useState } from "react";
-import { collection, doc, getDocs, setDoc, addDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc } from "firebase/firestore";
 import { db, auth } from "../firebase";
 import moment from "moment";
 import "moment/locale/pt-br";
@@ -17,12 +16,11 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
   const [availableHours, setAvailableHours] = useState([]);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [showMessage, setShowMessage] = useState(false);
-  const [isSaving, setIsSaving] = useState(false); // Novo: para controlar botão salvar
+  const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
     if (booking) {
-      const bookingDate = moment(booking.date, "DD/MM/YYYY");
-      // Se a data do booking for antes de amanhã, seleciona amanhã
+      const bookingDate = moment(booking.date);
       setSelectedDate(
         bookingDate.isBefore(moment().add(1, "day"), "day")
           ? moment().add(1, "day")
@@ -40,24 +38,17 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     moment().startOf("day").add(i + 1, "days")
   );
 
+  // Converte duração "HH:MM" para horas decimais
   const parseDuration = (duration) => {
     if (!duration) return 1;
-    let hours = 0,
-      minutes = 0;
-    const hMatch = duration.match(/(\d+)h/);
-    const hrMatch = duration.match(/(\d+) horas?/);
-    const mMatch = duration.match(/(\d+)min/);
-    if (hMatch) hours = parseInt(hMatch[1]);
-    if (hrMatch) hours = parseInt(hrMatch[1]);
-    if (mMatch) minutes = parseInt(mMatch[1]);
-    return hours + minutes / 60;
+    const [h, m] = duration.split(":");
+    return parseInt(h) + parseInt(m) / 60;
   };
 
   useEffect(() => {
     const loadBookings = async () => {
-      const q = collection(db, "bookings");
-      const snap = await getDocs(q);
-      setBookings(snap.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
+      const snap = await getDocs(collection(db, "bookings"));
+      setBookings(snap.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     };
     loadBookings();
   }, []);
@@ -68,82 +59,55 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
 
     const duration = parseDuration(currentService.duration);
 
-    // Filtrar bookings do dia selecionado (excluindo o próprio booking se for edição)
     const dayBookings = bookings
-      .filter((b) => {
-        // Se a data do booking vem como Timestamp, converte para moment
+      .filter(b => {
         const bDate = moment(b.date.toDate ? b.date.toDate() : b.date);
         return bDate.isSame(selectedDate, "day") && b.id !== booking?.id;
       })
-      .map((b) => {
+      .map(b => {
         const [h, m] = b.time.split(":");
         const start = parseInt(h) + parseInt(m) / 60;
-        const end = start + parseDuration(b.duration || "1 hora");
+        const end = start + parseDuration(b.duration || "01:00");
         return { start, end };
       });
 
-    const hours = Array.from({ length: 22 }, (_, i) => 9 + i * 0.5).filter(
-      (hour) => {
-        const endTime = hour + duration;
-        const bookingStart = selectedDate
-          .clone()
-          .hour(Math.floor(hour))
-          .minute(hour % 1 === 0.5 ? 30 : 0);
+    const hours = Array.from({ length: 22 }, (_, i) => 9 + i * 0.5).filter(start => {
+      const end = start + duration;
 
-        // Verificar se o horário está a pelo menos 24h do momento atual - usando minutos para maior precisão
-        const isLessThan24h = bookingStart.diff(moment(), "minutes") < 1440;
+      const bookingStart = selectedDate
+        .clone()
+        .hour(Math.floor(start))
+        .minute(start % 1 === 0.5 ? 30 : 0);
 
-        // Verifica se há conflito com outros bookings do dia
-        const isAvailable = !dayBookings.some(
-          (b) => hour < b.end && endTime > b.start
-        );
+      const isPast = bookingStart.isBefore(moment());
+      const isAvailable = !dayBookings.some(b => start < b.end && end > b.start);
 
-        return isAvailable && !isLessThan24h;
-      }
-    );
+      return !isPast && isAvailable;
+    });
 
     setAvailableHours(hours);
-
-    // Se o horário selecionado não estiver mais disponível, zera
     if (!hours.includes(selectedHour)) setSelectedHour(null);
   }, [selectedDate, bookings, service, booking, selectedHour]);
 
   const handleConfirm = async () => {
-    if (!user) {
-      showTempMessage("Você precisa estar logado.");
-      return;
-    }
+    if (!user) return showTempMessage("Você precisa estar logado.");
+    if (selectedHour == null) return showTempMessage("Selecione um horário antes de confirmar.");
 
-    if (selectedHour == null) {
-      showTempMessage("Selecione um horário antes de confirmar.");
-      return;
-    }
-
-    setIsSaving(true); // Bloquear botão salvar
+    setIsSaving(true);
 
     const hourStr = moment({
       hour: Math.floor(selectedHour),
       minute: selectedHour % 1 === 0.5 ? 30 : 0,
     }).format("HH:mm");
 
-    const combinedDateTime = moment(
-      `${selectedDate.format("DD/MM/YYYY")} ${hourStr}`,
-      "DD/MM/YYYY HH:mm"
-    ).toDate();
+    const combinedDateTime = moment(`${selectedDate.format("DD/MM/YYYY")} ${hourStr}`, "DD/MM/YYYY HH:mm").toDate();
 
     try {
       if (booking && onSave) {
-        // Alteração de booking existente
         await onSave(selectedDate.format("YYYY-MM-DD"), hourStr);
-        showTempMessage(
-          `⏰ Horário alterado para ${selectedDate.format(
-            "DD/MM/YYYY"
-          )} às ${hourStr}`
-        );
+        showTempMessage(`⏰ Horário alterado para ${selectedDate.format("DD/MM/YYYY")} às ${hourStr}`);
       } else if (service) {
-        // Novo agendamento - usando addDoc para evitar conflito de ID
-        const bookingsCollection = collection(db, "bookings");
-        await addDoc(bookingsCollection, {
+        await addDoc(collection(db, "bookings"), {
           serviceName: service.name,
           price: service.price,
           duration: service.duration,
@@ -152,30 +116,20 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
           clientId: user.uid,
           createdAt: new Date().toISOString(),
         });
-        showTempMessage(
-          `✅ Agendamento confirmado para ${selectedDate.format(
-            "DD/MM/YYYY"
-          )} às ${hourStr}`
-        );
+        showTempMessage(`✅ Agendamento confirmado para ${selectedDate.format("DD/MM/YYYY")} às ${hourStr}`);
       }
-    } catch (error) {
-      console.error("Erro ao salvar agendamento:", error);
+    } catch (err) {
+      console.error(err);
       showTempMessage("Erro ao salvar agendamento. Tente novamente.");
     } finally {
       setIsSaving(false);
     }
   };
 
-  const showTempMessage = (msg) => {
+  const showTempMessage = msg => {
     setConfirmationMessage(msg);
     setShowMessage(true);
-
-    // Mantém mensagem visível por 3 segundos, mas não fecha modal automaticamente
-    setTimeout(() => {
-      setShowMessage(false);
-      // Se quiser fechar automaticamente após mensagem, descomente abaixo:
-      // onClose();
-    }, 3000);
+    setTimeout(() => setShowMessage(false), 3000);
   };
 
   if (!isOpen) return null;
@@ -197,27 +151,19 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
           </button>
         </div>
 
-        <div
-          className={`absolute top-10 left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${
-            showMessage ? "opacity-100" : "opacity-0"
-          }`}
-        >
+        <div className={`absolute top-10 left-0 w-full p-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold text-center shadow-lg border-2 border-[#585B56] transition-opacity duration-500 ${showMessage ? "opacity-100" : "opacity-0"}`}>
           {confirmationMessage}
         </div>
 
         {/* Seleção de dias */}
         <div className="flex overflow-x-auto gap-2 mb-4">
-          {nextDays.map((day) => {
+          {nextDays.map(day => {
             const isSelected = day.isSame(selectedDate, "day");
             return (
               <button
                 key={day.format("YYYY-MM-DD")}
                 onClick={() => setSelectedDate(day)}
-                className={`flex-shrink-0 w-14 h-14 flex flex-col items-center justify-center rounded-lg font-bold transition ${
-                  isSelected
-                    ? "bg-[#D7AF70] text-[#000001]"
-                    : "bg-[#585B56] text-[#D7AF70]"
-                }`}
+                className={`flex-shrink-0 w-14 h-14 flex flex-col items-center justify-center rounded-lg font-bold transition ${isSelected ? "bg-[#D7AF70] text-[#000001]" : "bg-[#585B56] text-[#D7AF70]"}`}
               >
                 <span className="text-xs">{day.format("ddd")}</span>
                 <span className="text-lg">{day.date()}</span>
@@ -226,23 +172,16 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
           })}
         </div>
 
-        {/* Horários disponíveis apenas */}
+        {/* Horários disponíveis */}
         <div className="overflow-x-auto flex gap-2 mb-4">
-          {availableHours.map((hour) => {
-            const label = moment({
-              hour: Math.floor(hour),
-              minute: hour % 1 === 0.5 ? 30 : 0,
-            }).format("HH:mm");
+          {availableHours.map(hour => {
+            const label = moment({ hour: Math.floor(hour), minute: hour % 1 === 0.5 ? 30 : 0 }).format("HH:mm");
             return (
               <button
                 key={hour}
                 onClick={() => setSelectedHour(hour)}
-                disabled={isSaving} // Desabilita enquanto salva
-                className={`flex-shrink-0 px-4 py-2 rounded-lg font-bold transition ${
-                  selectedHour === hour
-                    ? "bg-[#D7AF70] text-[#000001]"
-                    : "bg-[#585B56] text-[#D7AF70] hover:bg-[#D7AF70] hover:text-[#000001]"
-                }`}
+                disabled={isSaving}
+                className={`flex-shrink-0 px-4 py-2 rounded-lg font-bold transition ${selectedHour === hour ? "bg-[#D7AF70] text-[#000001]" : "bg-[#585B56] text-[#D7AF70] hover:bg-[#D7AF70] hover:text-[#000001]"}`}
               >
                 {label}
               </button>
@@ -252,7 +191,7 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
 
         <button
           onClick={handleConfirm}
-          disabled={isSaving} // Desabilita enquanto salva
+          disabled={isSaving}
           className="w-full py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-bold shadow hover:bg-[#937D64] transition disabled:opacity-50 disabled:cursor-not-allowed"
         >
           {isSaving ? "Salvando..." : booking ? "Salvar Alteração" : "Confirmar agendamento"}

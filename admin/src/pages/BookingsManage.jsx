@@ -1,46 +1,40 @@
-import React, { useEffect, useState } from 'react'
-import { collection, onSnapshot, addDoc } from 'firebase/firestore'
-import { db } from '../firebase'
+import React, { useEffect, useState } from "react";
+import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { db } from "../firebase";
+import moment from "moment";
 
-export default function BookingsManage(){
-  const [bookings, setBookings] = useState([])
+export default function BookingsManage() {
+  const [bookings, setBookings] = useState([]);
 
-  useEffect(()=>{
-    const unsub = onSnapshot(collection(db,'bookings'), snap => setBookings(snap.docs.map(d=>({id:d.id, ...d.data()}))))
-    return ()=>unsub()
-  },[])
+  useEffect(() => {
+    const unsub = onSnapshot(collection(db, "bookings"), (snap) =>
+      setBookings(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
+    return () => unsub();
+  }, []);
 
-  async function blockDay(){
-    const date = prompt('Data para bloquear (YYYY-MM-DD):')
-    if(!date) return
-    await addDoc(collection(db,'blocked_slots'), { date, createdAt: new Date() })
-    alert('Dia bloqueado')
-  }
+  const removeBooking = async (id) => {
+    if (confirm("Deseja remover este agendamento?")) {
+      await deleteDoc(doc(db, "bookings", id));
+    }
+  };
 
   return (
-    <div>
-      <div className="flex justify-between items-center">
-        <h3 className="font-semibold">Agendamentos</h3>
-        <div>
-          <button onClick={blockDay} className="px-3 py-2 rounded-lg border">Bloquear dia</button>
-        </div>
-      </div>
-
-      <div className="mt-3 space-y-2">
-        {bookings.map(b=>(
-          <div key={b.id} className="border rounded p-2">
-            <div className="flex justify-between">
-              <div>
-                <p className="font-semibold">{b.serviceName}</p>
-                <p className="text-sm text-gray-500">{b.date} • {b.time}</p>
-              </div>
-              <div className="text-right">
-                <p>R$ {b.price?.toFixed(2)}</p>
-              </div>
-            </div>
+    <ul className="divide-y divide-gray-200 max-h-80 overflow-y-auto">
+      {bookings.map(b => (
+        <li key={b.id} className="py-2 flex justify-between items-center">
+          <div>
+            <p className="font-medium">{b.clientName}</p>
+            <p className="text-sm text-gray-600">
+              {moment(b.date).format("DD/MM/YYYY HH:mm")} • {b.serviceName}
+            </p>
           </div>
-        ))}
-      </div>
-    </div>
-  )
+          <button onClick={() => removeBooking(b.id)} className="bg-red-600 text-white px-2 py-1 rounded">
+            Excluir
+          </button>
+        </li>
+      ))}
+      {bookings.length === 0 && <p className="text-gray-500 text-sm">Nenhum agendamento.</p>}
+    </ul>
+  );
 }

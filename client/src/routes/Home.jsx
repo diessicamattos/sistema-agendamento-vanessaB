@@ -158,12 +158,12 @@ export default function Home() {
               {openSessions[session] && (
                 <div className="mt-2 flex flex-col gap-4">
                   {servicesList.map(s => (
-                    <div key={s.id} className="flex items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition">
-                      <div className="flex items-center gap-4">
+                    <div key={s.id} className="flex flex-col md:flex-row md:items-center justify-between bg-[#000001] p-4 rounded-2xl shadow-lg hover:bg-[#111] transition gap-4">
+                      <div className="flex items-center gap-4 w-full md:w-auto">
                         <img src={s.image || "/alongamento.jpg"} alt={s.name} className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" />
-                        <span className="font-bold text-lg md:text-xl">{s.name}</span>
+                        <span className="font-bold text-lg md:text-xl break-words">{s.name}</span>
                       </div>
-                      <div className="flex items-center gap-4">
+                      <div className="flex flex-col md:flex-row md:items-center gap-2 md:gap-4 w-full md:w-auto">
                         <span className="text-[#D7AF70] flex items-center gap-1">
                           <FaClock className="text-xs" /> {s.duration}
                         </span>

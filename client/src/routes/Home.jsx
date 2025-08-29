@@ -5,7 +5,7 @@ import { auth, db } from '../firebase'
 import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/firestore'
 import CalendarModal from '../components/CalendarModal'
 import { Link, useNavigate } from 'react-router-dom'
-import { FaClock } from 'react-icons/fa' // ícone de relógio
+import { FaClock, FaInstagram, FaCalendarCheck, FaSignOutAlt } from 'react-icons/fa'
 
 export default function Home() {
   const [selectedService, setSelectedService] = useState(null)
@@ -79,7 +79,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-[#585B56] text-[#D7AF70] p-4 md:p-6">
+    <div className="min-h-screen bg-[#585B56] text-[#D7AF70] pb-20 p-4 md:p-6">
       {/* Banner */}
       <section className="flex flex-col md:flex-row items-center bg-[#000001] p-4 md:p-6 rounded-2xl shadow-lg gap-4">
         <img 
@@ -89,23 +89,6 @@ export default function Home() {
         />
         <div className="w-full md:w-1/2 text-center md:text-left">
           <h1 className="text-3xl md:text-4xl font-bold mb-2">Agende seu horário comigo</h1>
-          <p className="mb-4 text-[#937D64]">Agende online o seu horário para atendimento</p>
-          {user && (
-            <div className="flex flex-col sm:flex-row gap-3 justify-center md:justify-start">
-              <Link 
-                to="/my" 
-                className="px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
-              >
-                Meus agendamentos
-              </Link>
-              <button 
-                onClick={handleLogout} 
-                className="px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
-              >
-                Sair
-              </button>
-            </div>
-          )}
         </div>
       </section>
 
@@ -126,7 +109,7 @@ export default function Home() {
           <p className="mt-2 text-[#937D64]">Após se cadastrar e fazer login, você terá acesso aos serviços, horários disponíveis e recados da proprietária.</p>
           <Link 
             to="/register" 
-            className="inline-block mt-4 px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
+            className="w-full sm:w-auto inline-block text-center mt-4 px-6 py-3 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
           >
             Criar conta
           </Link>
@@ -151,26 +134,26 @@ export default function Home() {
             {services.map(s => (
               <div 
                 key={s.id} 
-                className="flex flex-row items-center bg-[#000001] p-4 rounded-2xl shadow-lg gap-4"
+                className="flex flex-col sm:flex-row items-center bg-[#000001] p-4 rounded-2xl shadow-lg gap-4"
               >
                 <img 
                   src="/alongamento.jpg" 
                   alt={s.name} 
                   className="w-20 h-20 object-cover rounded-xl border-2 border-[#D7AF70]" 
                 />
-                <div className="flex-1">
+                <div className="flex-1 text-center sm:text-left">
                   <h3 className="font-bold text-lg md:text-xl">{s.name}</h3>
                   <p className="text-[#D7AF70]">
                     R$ {s.price.toFixed(2)}
                   </p>
-                  <p className="text-[#D7AF70] flex items-center gap-1">
+                  <p className="text-[#D7AF70] flex items-center justify-center sm:justify-start gap-1">
                     <FaClock /> {s.duration}
                   </p>
-              </div>
+                </div>
 
                 <button 
                   onClick={() => handleAgendar(s)} 
-                  className="px-4 py-2 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
+                  className="w-full sm:w-auto text-center px-4 py-2 rounded-xl bg-[#D7AF70] text-[#000001] font-semibold shadow hover:bg-[#8E443D] hover:text-[#D7AF70] transition"
                 >
                   Agendar
                 </button>
@@ -188,6 +171,32 @@ export default function Home() {
           service={selectedService}
           bookings={bookings}
         />
+      )}
+
+      {/* Menu fixo estilo app mobile */}
+      {user && (
+        <nav className="fixed bottom-0 left-0 w-full bg-[#000001] border-t border-[#D7AF70] flex justify-around items-center py-3 shadow-lg">
+          <Link to="/my" className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition">
+            <FaCalendarCheck className="text-2xl" />
+            <span className="text-xs">Meus</span>
+          </Link>
+          <a 
+            href="https://www.instagram.com/nailsbybrunalopes?igsh=NXJncnhvYTRzeXhw"
+            target="_blank" 
+            rel="noopener noreferrer"
+            className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition"
+          >
+            <FaInstagram className="text-2xl" />
+            <span className="text-xs">Instagram</span>
+          </a>
+          <button 
+            onClick={handleLogout} 
+            className="flex flex-col items-center text-[#D7AF70] hover:text-[#8E443D] transition"
+          >
+            <FaSignOutAlt className="text-2xl" />
+            <span className="text-xs">Sair</span>
+          </button>
+        </nav>
       )}
     </div>
   )

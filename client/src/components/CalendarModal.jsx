@@ -6,6 +6,10 @@ import moment from "moment";
 import "moment/locale/pt-br";
 import { useAuthState } from "react-firebase-hooks/auth";
 
+moment.updateLocale("pt-br", {
+  weekdaysShort: ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"],
+  weekdaysMin: ["D", "S", "T", "Q", "Q", "S", "S"],
+});
 moment.locale("pt-br");
 
 export default function CalendarModal({ isOpen, onClose, service, booking, onSave }) {
@@ -14,7 +18,7 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
   const [selectedHour, setSelectedHour] = useState(null);
   const [bookings, setBookings] = useState([]);
   const [availableHours, setAvailableHours] = useState([]);
-  const [blockedTimes, setBlockedTimes] = useState([]); // horários bloqueados do dia
+  const [blockedTimes, setBlockedTimes] = useState([]);
   const [confirmationMessage, setConfirmationMessage] = useState("");
   const [showMessage, setShowMessage] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
@@ -45,7 +49,6 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     return parseInt(h) + parseInt(m) / 60;
   };
 
-  // Carrega todos os agendamentos
   useEffect(() => {
     const loadBookings = async () => {
       const snap = await getDocs(collection(db, "bookings"));
@@ -54,14 +57,12 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     loadBookings();
   }, []);
 
-  // Carrega horários bloqueados do Firestore (documento global)
   useEffect(() => {
     const loadBlockedTimes = async () => {
       const docRef = doc(db, "blockedTimes", "global");
       const snap = await getDoc(docRef);
       if (snap.exists()) {
         const data = snap.data();
-        // garante que seja sempre array de objetos {start, end}
         const dayBlocked = data[selectedDate.format("YYYY-MM-DD")] || [];
         const safeBlocked = dayBlocked.filter(i => i && i.start && i.end);
         setBlockedTimes(safeBlocked);
@@ -72,14 +73,12 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
     loadBlockedTimes();
   }, [selectedDate]);
 
-  // Calcula horários disponíveis
   useEffect(() => {
     const currentService = booking || service;
     if (!currentService) return;
 
     const duration = parseDuration(currentService.duration);
 
-    // Horários já reservados
     const dayBookings = bookings
       .filter(b => {
         const bDate = moment(b.date?.toDate ? b.date.toDate() : b.date);
@@ -92,7 +91,6 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
         return { start, end };
       });
 
-    // Horários em que o serviço não pode ser agendado
     const hours = Array.from({ length: 22 }, (_, i) => 9 + i * 0.5).filter(start => {
       const end = start + duration;
       const bookingStart = selectedDate
@@ -103,7 +101,6 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
       const isPast = bookingStart.isBefore(moment());
       const isBooked = dayBookings.some(b => start < b.end && end > b.start);
 
-      // Verifica se está dentro de algum intervalo bloqueado
       const isBlocked = blockedTimes.some(interval => {
         if (!interval || !interval.start || !interval.end) return false;
         const [blockStartH, blockStartM] = interval.start.split(":").map(Number);
@@ -188,19 +185,21 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
 
         {/* Seleção de dias */}
         <div className="flex overflow-x-auto gap-2 mb-4">
-          {nextDays.map(day => {
-            const isSelected = day.isSame(selectedDate, "day");
-            return (
-              <button
-                key={day.format("YYYY-MM-DD")}
-                onClick={() => setSelectedDate(day)}
-                className={`flex-shrink-0 w-14 h-14 flex flex-col items-center justify-center rounded-lg font-bold transition ${isSelected ? "bg-[#D7AF70] text-[#000001]" : "bg-[#585B56] text-[#D7AF70]"}`}
-              >
-                <span className="text-xs">{day.format("ddd")}</span>
-                <span className="text-lg">{day.date()}</span>
-              </button>
-            );
-          })}
+          {nextDays
+            .filter(day => day.isoWeekday() !== 7) // bloqueia domingos
+            .map(day => {
+              const isSelected = day.isSame(selectedDate, "day");
+              return (
+                <button
+                  key={day.format("YYYY-MM-DD")}
+                  onClick={() => setSelectedDate(day)}
+                  className={`flex-shrink-0 w-14 h-14 flex flex-col items-center justify-center rounded-lg font-bold transition ${isSelected ? "bg-[#D7AF70] text-[#000001]" : "bg-[#585B56] text-[#D7AF70]"}`}
+                >
+                  <span className="text-xs">{day.format("ddd")}</span>
+                  <span className="text-lg">{day.date()}</span>
+                </button>
+              );
+            })}
         </div>
 
         {/* Horários disponíveis */}

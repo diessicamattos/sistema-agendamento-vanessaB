@@ -1,0 +1,22 @@
+{
+  "name": "Agenda Manicure",
+  "short_name": "Manicure",
+  "description": "Agenda e gestão para manicures",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#fdfaf6",
+  "theme_color": "#2f2f2f",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "/icons/pwa-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/icons/pwa-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

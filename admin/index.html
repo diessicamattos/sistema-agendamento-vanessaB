@@ -3,7 +3,24 @@
   <head>
     <meta charset="utf-8"/>
     <meta name="viewport" content="width=device-width,initial-scale=1"/>
+    
+    <!-- Cor da barra do navegador -->
+    <meta name="theme-color" content="#2f2f2f" />
+
+    <!-- Suporte PWA iOS -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+
+    <!-- Suporte PWA Android -->
+    <meta name="mobile-web-app-capable" content="yes" />
+
+    <!-- Manifest obrigatório para PWA -->
+    <link rel="manifest" href="/manifest.webmanifest" />
+
     <title>Admin — Sua Manicure</title>
+
+    <!-- Tailwind -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -24,7 +41,7 @@
     </script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
   </head>
-  <body>
+  <body class="bg-[#fdfaf6]">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

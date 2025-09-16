@@ -10,7 +10,7 @@ export default defineConfig({
       registerType: 'autoUpdate',       // service worker atualiza sozinho
       includeAssets: [
         'favicon.ico',
-        'apple-touch-icon.png',
+        'apple-touch-icon.jpg',
         'icons/mask-icon.svg'
       ],
       manifest: {
@@ -24,19 +24,19 @@ export default defineConfig({
         start_url: '/',
         icons: [
           {
-            src: 'icons/pwa-192x192.png',
+            src: 'icons/pwa-192x192.jpg',
             sizes: '192x192',
-            type: 'image/png'
+            type: 'image/jpg'
           },
           {
-            src: 'icons/pwa-512x512.png',
+            src: 'icons/pwa-512x512.jpg',
             sizes: '512x512',
-            type: 'image/png'
+            type: 'image/jpg'
           },
           {
-            src: 'icons/pwa-512x512-maskable.png',
+            src: 'icons/pwa-512x512-maskable.jpg',
             sizes: '512x512',
-            type: 'image/png',
+            type: 'image/jpg',
             purpose: 'maskable'
           }
         ]
@@ -44,7 +44,7 @@ export default defineConfig({
       workbox: {
         // Mantemos simples para não interferir no Firebase/Firestore.
         // O plugin já faz o pre-cache dos assets do build.
-        globPatterns: ['**/*.{js,css,html,ico,png,svg,webp}']
+        globPatterns: ['**/*.{js,css,html,ico,jpg,svg,webp}']
       }
     })
   ]

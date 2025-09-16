@@ -26,7 +26,7 @@ export default function Dashboard() {
 
   const nav = useNavigate();
 
-  const blockedWeekdays = [0]; // domingos
+  const blockedWeekdays = [0, 1]; // domingos (0) e segundas (1)
   const blockedDates = ["2025-09-07", "2025-12-25"]; // datas específicas
 
   // Fetch bookings
@@ -119,67 +119,121 @@ export default function Dashboard() {
   const blockedForDay = blockedTimes[selectedDate.format("YYYY-MM-DD")] || [];
 
   return (
-    <div className="min-h-screen bg-gray-100">
+    <div className="min-h-screen bg-[#fdfaf6]">
       {/* Header */}
-      <header className="bg-white shadow-md p-4 flex justify-between items-center md:flex-row flex-col md:gap-0 gap-2">
-        <div className="flex items-center gap-2">
-          <img src="/logo.jpg" alt="Logo" className="w-10 h-10 object-contain opacity-70" />
-          <h1 className="text-2xl font-bold text-gray-800">Painel Admin</h1>
+      <header className="bg-[#2f2f2f] shadow-md p-4 flex justify-between items-center">
+        <div className="flex items-center gap-3">
+          <img src="/logo.jpg" alt="Logo" className="w-12 h-12 object-contain rounded-full border-2 border-[#d4af37]" />
+          <h1 className="text-2xl font-extrabold text-[#fdfaf6] tracking-wide">Painel Admin</h1>
         </div>
 
-        <div className="flex md:hidden justify-between w-full">
-          <button className="bg-gray-200 px-3 py-1 rounded" onClick={() => setMenuOpen(!menuOpen)}>
-            {menuOpen ? "Fechar Menu" : "Menu"}
-          </button>
-          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">
+        {/* Menu Desktop */}
+        <nav className="hidden md:flex gap-6">
+          <NavLink
+            to="/dashboard"
+            className={({ isActive }) =>
+              isActive
+                ? "text-[#d4af37] font-bold border-b-2 border-[#d4af37]"
+                : "text-[#fdfaf6] hover:text-[#d4af37] transition"
+            }
+          >
+            Dashboard
+          </NavLink>
+          <NavLink
+            to="/bookings"
+            className={({ isActive }) =>
+              isActive
+                ? "text-[#d4af37] font-bold border-b-2 border-[#d4af37]"
+                : "text-[#fdfaf6] hover:text-[#d4af37] transition"
+            }
+          >
+            Agendamentos
+          </NavLink>
+          <NavLink
+            to="/services"
+            className={({ isActive }) =>
+              isActive
+                ? "text-[#d4af37] font-bold border-b-2 border-[#d4af37]"
+                : "text-[#fdfaf6] hover:text-[#d4af37] transition"
+            }
+          >
+            Serviços
+          </NavLink>
+          <NavLink
+            to="/finance"
+            className={({ isActive }) =>
+              isActive
+                ? "text-[#d4af37] font-bold border-b-2 border-[#d4af37]"
+                : "text-[#fdfaf6] hover:text-[#d4af37] transition"
+            }
+          >
+            Financeiro
+          </NavLink>
+          <button
+            onClick={handleLogout}
+            className="bg-red-600 text-white px-3 py-1 rounded-xl ml-4"
+          >
             Sair
           </button>
-        </div>
-
-        <nav className="hidden md:flex gap-4">
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Dashboard</NavLink>
-          <NavLink to="/services" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Serviços</NavLink>
-          <NavLink to="/finance" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Financeiro</NavLink>
         </nav>
+
+        {/* Botão hamburguer mobile */}
+        <div className="md:hidden">
+          <button
+            onClick={() => setMenuOpen(!menuOpen)}
+            className="text-[#d4af37] text-3xl focus:outline-none"
+          >
+            {menuOpen ? "✕" : "☰"}
+          </button>
+        </div>
       </header>
 
+      {/* Menu mobile */}
       {menuOpen && (
-        <nav className="flex flex-col bg-white p-4 gap-2 md:hidden">
-          <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Dashboard</NavLink>
-          <NavLink to="/services" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Serviços</NavLink>
-          <NavLink to="/finance" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Financeiro</NavLink>
-          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">Sair</button>
+        <nav className="flex flex-col bg-[#2f2f2f] p-4 gap-4 md:hidden">
+          <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className="text-[#fdfaf6] hover:text-[#d4af37]">Dashboard</NavLink>
+          <NavLink to="/bookings" onClick={() => setMenuOpen(false)} className="text-[#fdfaf6] hover:text-[#d4af37]">Agendamentos</NavLink>
+          <NavLink to="/services" onClick={() => setMenuOpen(false)} className="text-[#fdfaf6] hover:text-[#d4af37]">Serviços</NavLink>
+          <NavLink to="/finance" onClick={() => setMenuOpen(false)} className="text-[#fdfaf6] hover:text-[#d4af37]">Financeiro</NavLink>
+          <button onClick={handleLogout} className="bg-red-600 text-white px-3 py-2 rounded-xl">Sair</button>
         </nav>
       )}
 
       <main className="p-4 space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
           {/* Booking List */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-xl font-semibold mb-4">
-              Agendamentos do dia {selectedDate.format("DD/MM/YYYY")}
+          <div className="bg-white rounded-2xl shadow-lg p-5 border border-[#e6e1da]">
+            <h2 className="text-xl font-semibold mb-4 text-[#2f2f2f]">
+              Agendamentos do dia{" "}
+              <span className="text-[#d4af37]">{selectedDate.format("DD/MM/YYYY")}</span>
             </h2>
             {isBlocked ? (
-              <p className="text-red-500 font-bold">Este dia está bloqueado para agendamentos.</p>
+              <p className="text-red-600 font-bold">Este dia está bloqueado para agendamentos.</p>
             ) : bookingsForSelectedDate.length === 0 ? (
               <p className="text-gray-500">Nenhum agendamento neste dia.</p>
             ) : (
-              <BookingList bookings={bookingsForSelectedDate} showClientName blockedTimes={blockedForDay} />
+              <BookingList
+                bookings={bookingsForSelectedDate}
+                showClientName
+                blockedTimes={blockedForDay}
+              />
             )}
 
             {/* Bloquear horários */}
-            <div className="mt-4 border-t pt-4">
-              <h3 className="font-semibold mb-2">Bloquear horários</h3>
-              <input type="date" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} className="border p-1 rounded mb-2"/>
-              <input type="time" value={newBlockedStart} onChange={(e) => setNewBlockedStart(e.target.value)} className="border p-1 rounded mb-2 ml-2"/>
-              <input type="time" value={newBlockedEnd} onChange={(e) => setNewBlockedEnd(e.target.value)} className="border p-1 rounded mb-2 ml-2"/>
-              <button onClick={handleAddBlockedTime} className="ml-2 bg-blue-600 text-white px-3 py-1 rounded">Adicionar</button>
+            <div className="mt-6 border-t pt-4">
+              <h3 className="font-semibold mb-3 text-[#2f2f2f]">Bloquear horários</h3>
+              <div className="flex flex-wrap gap-2 items-center">
+                <input type="date" value={newBlockedDate} onChange={(e) => setNewBlockedDate(e.target.value)} className="border p-2 rounded-xl"/>
+                <input type="time" value={newBlockedStart} onChange={(e) => setNewBlockedStart(e.target.value)} className="border p-2 rounded-xl"/>
+                <input type="time" value={newBlockedEnd} onChange={(e) => setNewBlockedEnd(e.target.value)} className="border p-2 rounded-xl"/>
+                <button onClick={handleAddBlockedTime} className="bg-[#d4af37] text-[#2f2f2f] font-semibold px-4 py-2 rounded-xl shadow">Adicionar</button>
+              </div>
 
-              <ul className="mt-2 divide-y divide-gray-200 max-h-32 overflow-y-auto">
+              <ul className="mt-3 divide-y divide-gray-200 max-h-32 overflow-y-auto">
                 {blockedForDay.map((interval) => (
-                  <li key={interval.start + interval.end} className="flex justify-between py-1">
-                    <span>{interval.start} - {interval.end}</span>
-                    <button onClick={() => handleRemoveBlockedTime(selectedDate.format("YYYY-MM-DD"), interval)} className="text-red-500">Remover</button>
+                  <li key={interval.start + interval.end} className="flex justify-between py-2">
+                    <span className="text-sm">{interval.start} - {interval.end}</span>
+                    <button onClick={() => handleRemoveBlockedTime(selectedDate.format("YYYY-MM-DD"), interval)} className="text-red-600 font-semibold">Remover</button>
                   </li>
                 ))}
               </ul>
@@ -187,16 +241,28 @@ export default function Dashboard() {
           </div>
 
           {/* Global Note */}
-          <div className="bg-white rounded-xl shadow p-4">
-            <h2 className="text-xl font-semibold mb-4">Recado da proprietária</h2>
-            <textarea value={notes} onChange={handleNoteChange} placeholder="Digite o recado..." className="w-full p-2 rounded border border-gray-300 resize-none" rows={4}/>
-            <button onClick={handlePostNote} className="mt-2 bg-blue-600 text-white px-4 py-2 rounded" disabled={loadingNotes}>Postar</button>
+          <div className="bg-white rounded-2xl shadow-lg p-5 border border-[#e6e1da]">
+            <h2 className="text-xl font-semibold mb-4 text-[#2f2f2f]">Recado da proprietária</h2>
+            <textarea
+              value={notes}
+              onChange={handleNoteChange}
+              placeholder="Digite o recado..."
+              className="w-full p-3 rounded-xl border border-gray-300 resize-none focus:ring-2 focus:ring-[#d4af37]"
+              rows={4}
+            />
+            <button
+              onClick={handlePostNote}
+              className="mt-3 bg-[#d4af37] text-[#2f2f2f] font-semibold px-5 py-2 rounded-xl shadow hover:bg-[#c9a233]"
+              disabled={loadingNotes}
+            >
+              Postar
+            </button>
           </div>
         </div>
 
         {/* Calendar */}
-        <div className="bg-white rounded-xl shadow p-4">
-          <h2 className="text-xl font-semibold mb-4">Calendário</h2>
+        <div className="bg-white rounded-2xl shadow-lg p-5 border border-[#e6e1da]">
+          <h2 className="text-xl font-semibold mb-4 text-[#2f2f2f]">Calendário</h2>
           <Calendar
             currentMonth={currentMonth}
             setCurrentMonth={setCurrentMonth}

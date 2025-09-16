@@ -1,3 +1,5 @@
+// src/pages/Finance.jsx
+
 import React, { useEffect, useState } from "react";
 import { collection, onSnapshot, getDoc, doc } from "firebase/firestore";
 import { db, auth } from "../firebase";
@@ -46,38 +48,39 @@ export default function Finance() {
 
   return (
     <div className="min-h-screen bg-gray-100">
-      {/* Header + Menu */}
-      <header className="bg-white shadow-md p-4 flex justify-between items-center md:flex-row flex-col md:gap-0 gap-2">
+      {/* Header */}
+      <header className="bg-white shadow-md p-4 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <img src="/logo.jpg" alt="Logo" className="w-10 h-10 object-contain opacity-70" />
           <h1 className="text-2xl font-bold text-gray-800">Painel Admin</h1>
         </div>
 
-        <div className="flex md:hidden justify-between w-full">
+        {/* Menu Desktop */}
+        <nav className="hidden md:flex gap-6">
+          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-blue-600 font-bold border-b-2 border-blue-600" : "text-gray-600"}>Dashboard</NavLink>
+          <NavLink to="/services" className={({ isActive }) => isActive ? "text-blue-600 font-bold border-b-2 border-blue-600" : "text-gray-600"}>Serviços</NavLink>
+          <NavLink to="/finance" className={({ isActive }) => isActive ? "text-blue-600 font-bold border-b-2 border-blue-600" : "text-gray-600"}>Financeiro</NavLink>
+          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded ml-4">Sair</button>
+        </nav>
+
+        {/* Botão hamburguer mobile */}
+        <div className="md:hidden">
           <button
-            className="bg-gray-200 px-3 py-1 rounded"
             onClick={() => setMenuOpen(!menuOpen)}
+            className="text-gray-800 text-3xl focus:outline-none"
           >
-            {menuOpen ? "Fechar Menu" : "Menu"}
-          </button>
-          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">
-            Sair
+            {menuOpen ? "✕" : "☰"}
           </button>
         </div>
-
-        <nav className="hidden md:flex gap-4">
-          <NavLink to="/dashboard" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Dashboard</NavLink>
-          <NavLink to="/services" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Serviços</NavLink>
-          <NavLink to="/finance" className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Financeiro</NavLink>
-        </nav>
       </header>
 
+      {/* Menu Mobile */}
       {menuOpen && (
-        <nav className="flex flex-col bg-white p-4 gap-2 md:hidden">
-          <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Dashboard</NavLink>
-          <NavLink to="/services" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Serviços</NavLink>
-          <NavLink to="/finance" onClick={() => setMenuOpen(false)} className={({ isActive }) => isActive ? "text-blue-600 font-bold" : "text-gray-600"}>Financeiro</NavLink>
-          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-1 rounded">Sair</button>
+        <nav className="flex flex-col bg-white p-4 gap-4 md:hidden shadow-md">
+          <NavLink to="/dashboard" onClick={() => setMenuOpen(false)} className="text-gray-800 hover:text-blue-600">Dashboard</NavLink>
+          <NavLink to="/services" onClick={() => setMenuOpen(false)} className="text-gray-800 hover:text-blue-600">Serviços</NavLink>
+          <NavLink to="/finance" onClick={() => setMenuOpen(false)} className="text-gray-800 hover:text-blue-600">Financeiro</NavLink>
+          <button onClick={handleLogout} className="bg-red-500 text-white px-3 py-2 rounded">Sair</button>
         </nav>
       )}
 

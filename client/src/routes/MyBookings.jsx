@@ -64,7 +64,7 @@ export default function MyBookings() {
 
   const sendWhatsAppNotification = (booking) => {
     const { serviceName, date, time } = booking;
-    const msg = `Olá! Estou cancelando meu agendamento para *${serviceName}* marcado para *${date} às ${time}*. Sei que está dentro do prazo de 24h e quero avisar.`;
+    const msg = `Olá! Estou cancelando meu agendamento para *${serviceName}* marcado para *${date} às ${time}*. Sei que está fora do prazo de 24h e quero avisar.`;
     const url = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(msg)}`;
     window.open(url, "_blank");
   };

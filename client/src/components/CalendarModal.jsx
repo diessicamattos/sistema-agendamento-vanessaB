@@ -186,7 +186,7 @@ export default function CalendarModal({ isOpen, onClose, service, booking, onSav
         {/* Seleção de dias */}
         <div className="flex overflow-x-auto gap-2 mb-4">
           {nextDays
-            .filter(day => day.isoWeekday() !== 7) // bloqueia domingos
+            .filter(day => day.isoWeekday() !== 7 && day.isoWeekday() !== 1) // bloqueia domingos (7) e segundas (1)
             .map(day => {
               const isSelected = day.isSame(selectedDate, "day");
               return (

@@ -6,6 +6,8 @@ import { doc, getDoc, collection, query, where, onSnapshot } from 'firebase/fire
 import CalendarModal from '../components/CalendarModal'
 import { Link, useNavigate } from 'react-router-dom'
 import { FaClock, FaChevronDown, FaChevronUp } from 'react-icons/fa'
+import moment from "moment";
+import "moment/locale/pt-br";
 
 export default function Home() {
   const [selectedService, setSelectedService] = useState(null)
@@ -17,6 +19,22 @@ export default function Home() {
   const [services, setServices] = useState([])
   const [openSessions, setOpenSessions] = useState({})
   const navigate = useNavigate()
+
+  // Busca recado do dia (em tempo real)
+  useEffect(() => {
+    const todayId = moment().format("YYYY-MM-DD"); // ex.: 2025-09-18
+    const docRef = doc(db, "notes", todayId);
+
+    const unsub = onSnapshot(docRef, snap => {
+      if (snap.exists()) {
+        setNotes(snap.data().text);
+      } else {
+        setNotes("");
+      }
+    });
+
+    return () => unsub();
+  }, []);
 
   // Buscar dados do usuário
   useEffect(() => {
@@ -47,16 +65,6 @@ export default function Home() {
     })
     return () => unsubscribe()
   }, [user])
-
-  // Listener recado global
-  useEffect(() => {
-    const docRef = doc(db, "notes", "global")
-    const unsub = onSnapshot(docRef, snap => {
-      if (snap.exists()) setNotes(snap.data().text)
-      else setNotes("")
-    })
-    return () => unsub()
-  }, [])
 
   // Listener serviços
   useEffect(() => {
@@ -133,12 +141,12 @@ export default function Home() {
       )}
 
       {/* Recados da proprietária */}
-      {user && (
-        <section className="mt-8 bg-[#000001] p-4 rounded-2xl shadow-lg">
-          <h2 className="text-2xl font-bold mb-2">Recados da proprietária</h2>
-          <p className="text-[#937D64]">{notes || "✨Nenhum recado no momento. ✨"}</p>
-        </section>
-      )}
+      <section className="mt-8 bg-[#000001] p-4 rounded-2xl shadow-lg text-center">
+        <h2 className="text-2xl font-bold mb-2">Recados da proprietária</h2>
+        <p className="text-[#937D64]">
+          ✨ {notes || "Nenhum recado no momento."} ✨
+        </p>
+      </section>
 
       {/* Serviços por sessão (Accordion) */}
       {user && Object.keys(sortedGroupedServices).length > 0 && (

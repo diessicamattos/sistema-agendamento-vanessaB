@@ -15,7 +15,12 @@ export default function BookingList({ bookings, showClientName = false }) {
         const bookingDate = b.date?.toDate ? moment(b.date.toDate()) : moment(b.date);
         return (
           <li key={b.id} className="py-2">
-            {showClientName && <p className="font-medium text-gray-800">{b.clientName}</p>}
+            {showClientName && (
+              <>
+                <p className="font-medium text-gray-800">{b.clientName}</p>
+                <p className="text-sm text-gray-500">📞 {b.clientPhone || "Sem telefone"}</p>
+              </>
+            )}
             <p className="text-sm text-gray-600">
               {bookingDate.format("DD/MM/YYYY HH:mm")} • {b.serviceName} • {b.duration} • R$ {b.price?.toFixed(2)}
             </p>

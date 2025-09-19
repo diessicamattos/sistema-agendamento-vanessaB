@@ -29,21 +29,28 @@ export default function Dashboard() {
   const blockedWeekdays = [0, 1]; // domingos (0) e segundas (1)
   const blockedDates = ["2025-09-07", "2025-12-25"]; // datas específicas
 
-  // Fetch bookings
-  useEffect(() => {
-    const unsub = onSnapshot(collection(db, "bookings"), async (snap) => {
-      const bookingsData = await Promise.all(
-        snap.docs.map(async (d) => {
-          const data = d.data();
-          const userSnap = await getDoc(doc(db, "users", data.clientId));
-          const userData = userSnap.exists() ? userSnap.data() : {};
-          return { id: d.id, ...data, clientName: userData.name || "Cliente" };
-        })
-      );
-      setBookings(bookingsData);
-    });
-    return () => unsub();
-  }, []);
+// Fetch bookings
+useEffect(() => {
+  const unsub = onSnapshot(collection(db, "bookings"), async (snap) => {
+    const bookingsData = await Promise.all(
+      snap.docs.map(async (d) => {
+        const data = d.data();
+        const userSnap = await getDoc(doc(db, "users", data.clientId));
+        const userData = userSnap.exists() ? userSnap.data() : {};
+        return { 
+          id: d.id, 
+          ...data, 
+          clientName: userData.name || "Cliente",
+          clientPhone: userData.phone || "Sem telefone"
+        };
+      })
+    );
+    setBookings(bookingsData);
+  });
+  return () => unsub();
+}, []);
+
+
 
   // Fetch notes
   useEffect(() => {

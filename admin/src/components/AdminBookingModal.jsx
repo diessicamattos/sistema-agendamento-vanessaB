@@ -59,7 +59,8 @@ export default function AdminBookingModal({ isOpen, onClose, onCreated }) {
   // função para cadastrar novo cliente rápido
   const handleCreateClient = async () => {
     if (!searchClient.trim()) return;
-    const newClient = { name: searchClient, createdAt: new Date() };
+    const phone = prompt("Digite o telefone do cliente (opcional):") || "";
+    const newClient = { name: searchClient, phone, createdAt: new Date() };
     const docRef = await addDoc(collection(db, "users"), newClient);
     const created = { id: docRef.id, ...newClient };
     setSelectedClient(created);
@@ -157,6 +158,7 @@ export default function AdminBookingModal({ isOpen, onClose, onCreated }) {
       await addDoc(collection(db, "bookings"), {
         clientId: selectedClient.id,
         clientName: selectedClient.name,
+        clientPhone: selectedClient.phone || "",
         serviceId: service.id,
         serviceName: service.name,
         duration: service.duration,
@@ -225,7 +227,7 @@ export default function AdminBookingModal({ isOpen, onClose, onCreated }) {
             onClick={() => setSelectedClient(c)}
             className="block w-full text-left px-2 py-1 hover:bg-gray-100 text-black"
           >
-            {c.name}
+            {c.name} {c.phone ? `• 📞 ${c.phone}` : ""}
           </button>
         ))}
         {/* botão para cadastrar rápido */}
@@ -240,6 +242,9 @@ export default function AdminBookingModal({ isOpen, onClose, onCreated }) {
         {selectedClient && (
           <p className="mt-2 text-sm text-green-600">
             Cliente selecionado: {selectedClient.name}
+            {selectedClient.phone && (
+              <span className="text-gray-700 ml-2"> • 📞 {selectedClient.phone}</span>
+            )}
           </p>
         )}
 

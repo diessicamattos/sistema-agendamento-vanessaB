@@ -1,7 +1,5 @@
-// src/pages/BookingsManage.jsx
-
 import React, { useEffect, useState } from "react";
-import { collection, onSnapshot, deleteDoc, doc } from "firebase/firestore";
+import { collection, onSnapshot, deleteDoc, doc, getDoc } from "firebase/firestore"; // 👈 adicionei getDoc
 import { db } from "../firebase";
 import moment from "moment";
 import { useNavigate } from "react-router-dom";
@@ -13,9 +11,33 @@ export default function BookingsManage() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const unsub = onSnapshot(collection(db, "bookings"), (snap) =>
-      setBookings(snap.docs.map((d) => ({ id: d.id, ...d.data() })))
-    );
+    const unsub = onSnapshot(collection(db, "bookings"), async (snap) => {
+      const bookingsData = await Promise.all(
+        snap.docs.map(async (d) => {
+          const data = d.data();
+
+          // 🔥 busca dados do cliente
+          let clientName = "Cliente";
+          let clientPhone = "Sem telefone";
+          if (data.clientId) {
+            const userSnap = await getDoc(doc(db, "users", data.clientId));
+            if (userSnap.exists()) {
+              const userData = userSnap.data();
+              clientName = userData.name || "Cliente";
+              clientPhone = userData.phone || "Sem telefone";
+            }
+          }
+
+          return {
+            id: d.id,
+            ...data,
+            clientName,
+            clientPhone,
+          };
+        })
+      );
+      setBookings(bookingsData);
+    });
     return () => unsub();
   }, []);
 
@@ -27,7 +49,7 @@ export default function BookingsManage() {
 
   return (
     <div className="min-h-screen bg-[#fdfaf6] p-4 space-y-6">
-      {/* Header com botão voltar e novo agendamento */}
+      {/* Header */}
       <div className="flex items-center justify-between">
         <button
           onClick={() => navigate("/dashboard")}
@@ -46,14 +68,14 @@ export default function BookingsManage() {
         </button>
       </div>
 
-      {/* Modal para criar agendamento */}
+      {/* Modal */}
       <AdminBookingModal
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreated={() => console.log("Agendamento criado!")}
       />
 
-      {/* Lista de agendamentos */}
+      {/* Lista */}
       <div className="bg-white rounded-2xl shadow-lg p-4 border border-[#e6e1da]">
         <h2 className="text-lg font-semibold text-[#2f2f2f] mb-3">
           Agendamentos Criados
@@ -69,11 +91,11 @@ export default function BookingsManage() {
               >
                 <div>
                   <p className="font-medium text-[#2f2f2f]">
-                    {b.clientName || "Cliente"}
+                    {b.clientName} • 📞 {b.clientPhone}
                   </p>
                   <p className="text-sm text-gray-600">
                     {formattedDate} • {b.serviceName || ""}
-                    {b.duration ? ` (${b.duration})` : ""}
+                    {b.duration ? ` (${b.duration})` : ""} • R$ {b.price?.toFixed(2)}
                   </p>
                 </div>
                 <button

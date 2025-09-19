@@ -10,13 +10,14 @@ export default function Register() {
   const [email, setEmail] = useState('')
   const [pass, setPass] = useState('')
   const [name, setName] = useState('')
+  const [phone, setPhone] = useState('')
   const navigate = useNavigate()
 
   async function handleSubmit(e) {
     e.preventDefault()
 
     // Validação simples
-    if (!name || !email || !pass) {
+    if (!name || !email || !pass || !phone) {
       alert('Preencha todos os campos.')
       return
     }
@@ -34,6 +35,7 @@ export default function Register() {
       await setDoc(doc(db, 'users', userCred.user.uid), {
         name,
         email,
+        phone, // 👈 novo campo
         role: 'client'
       })
 
@@ -59,6 +61,14 @@ export default function Register() {
             value={name}
             onChange={e => setName(e.target.value)}
             placeholder="Nome completo"
+            className="w-full rounded-xl border border-[#D7AF70]/40 bg-[#2a2a2a] text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D7AF70]"
+          />
+
+          <input
+            value={phone}
+            onChange={e => setPhone(e.target.value)}
+            placeholder="Telefone"
+            type="tel"
             className="w-full rounded-xl border border-[#D7AF70]/40 bg-[#2a2a2a] text-white placeholder-gray-400 px-4 py-3 focus:outline-none focus:ring-2 focus:ring-[#D7AF70]"
           />
 

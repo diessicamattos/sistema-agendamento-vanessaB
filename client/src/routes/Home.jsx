@@ -22,8 +22,8 @@ export default function Home() {
 
   // Busca recado do dia (em tempo real)
   useEffect(() => {
-    const todayId = moment().format("YYYY-MM-DD"); // ex.: 2025-09-18
-    const docRef = doc(db, "notes", todayId);
+    const docRef = doc(db, "notes", "global"); // busca sempre o recado global
+
 
     const unsub = onSnapshot(docRef, snap => {
       if (snap.exists()) {

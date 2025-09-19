@@ -57,13 +57,14 @@ export default function Dashboard() {
     fetchNote();
   }, [selectedDate]);
 
-  // Fetch blocked times from Firestore
-  useEffect(() => {
-    const unsub = onSnapshot(doc(db, "blockedTimes", "global"), (snap) => {
-      if (snap.exists()) setBlockedTimes(snap.data());
-    });
-    return () => unsub();
-  }, []);
+ // Fetch notes (recado global)
+useEffect(() => {
+  const unsub = onSnapshot(doc(db, "notes", "global"), (snap) => {
+    if (snap.exists()) setNotes(snap.data().text);
+    else setNotes("");
+  });
+  return () => unsub();
+}, []);
 
   const handleLogout = () => {
     signOut(auth);
@@ -72,12 +73,12 @@ export default function Dashboard() {
 
   const handleNoteChange = (e) => setNotes(e.target.value);
 
-  const handlePostNote = async () => {
-    if (!notes.trim()) return;
-    const docRef = doc(db, "notes", selectedDate.format("YYYY-MM-DD"));
-    await setDoc(docRef, { text: notes });
-    alert("Recado publicado!");
-  };
+const handlePostNote = async () => {
+  if (!notes.trim()) return;
+  const docRef = doc(db, "notes", "global"); // 🔥 salva sempre no doc global
+  await setDoc(docRef, { text: notes });
+  alert("Recado publicado!");
+};
 
   // Adicionar horário bloqueado (intervalo)
   const handleAddBlockedTime = async () => {

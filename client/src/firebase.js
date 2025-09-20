@@ -5,12 +5,12 @@ import { getFirestore } from "firebase/firestore";
 
 // Configuração do Firebase
 const firebaseConfig = {
-  apiKey: "AIzaSyBXrp62MJ8KwlyN-qH6kosJ33I5RdgENiI",
-  authDomain: "agenda-online-53170.firebaseapp.com",
-  projectId: "agenda-online-53170",
-  storageBucket: "agenda-online-53170.firebasestorage.app",
-  messagingSenderId: "416128953991",
-  appId: "1:416128953991:web:e7c269fdbdd885afa79222"
+  apiKey: "AIzaSyBGKwNIemhrKodCcrIt_Sq-J3x46RmhGq0",
+  authDomain: "agenda-vanessab.firebaseapp.com",
+  projectId: "agenda-vanessab",
+  storageBucket: "agenda-vanessab.firebasestorage.app",
+  messagingSenderId: "244911614487",
+  appId: "1:244911614487:web:7b96e926df4aa370d84a52"
 };
 
 // Inicializa o Firebase

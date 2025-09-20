@@ -112,7 +112,7 @@ export default function Home() {
           className="w-full md:w-1/2 h-auto rounded-2xl object-cover border-4 border-[#D7AF70]" 
         />
         <div className="w-full md:w-1/2 text-center md:text-left">
-          <h1 className="text-3xl md:text-4xl font-bold mb-2">Agende seu horário comigo</h1>
+          <h1 className="text-3xl md:text-4xl font-bold mb-2">olá seu horário comigo</h1>
         </div>
       </section>
 
